@@ -40,7 +40,6 @@
             }
         }
     },
-    
     "Resources": {
         "VPC": {
             "Type": "AWS::EC2::VPC",
@@ -532,112 +531,117 @@
             "Type": "AWS::RDS::DBSubnetGroup",
             "Properties": {
                 "DBSubnetGroupDescription": "Subnets available for the RDS DB Instance",
-                "SubnetIds": {  "Fn::FindInMap" : [ "SubnetConfig", "Private", "CIDR" ]}
+                "SubnetIds": {
+                    "Fn::FindInMap": [
+                        "SubnetConfig",
+                        "Private",
+                        "CIDR"
+                    ]
                 }
             }
         },
-        "DBSecurityGroup": {
-            "Type": "AWS::EC2::SecurityGroup",
-            "Properties": {
-                "GroupDescription": "Open database for access",
-                "VpcId": {
-                    "Ref": "VPC"
-                },
-                "SecurityGroupIngress": [
-                    {
-                        "IpProtocol": "tcp",
-                        "FromPort": "3306",
-                        "ToPort": "3306",
-                        "SourceSecurityGroupName": {
-                            "Ref": "WebSecurityGroup"
-                        }
+    "DBSecurityGroup": {
+        "Type": "AWS::EC2::SecurityGroup",
+        "Properties": {
+            "GroupDescription": "Open database for access",
+            "VpcId": {
+                "Ref": "VPC"
+            },
+            "SecurityGroupIngress": [
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": "3306",
+                    "ToPort": "3306",
+                    "SourceSecurityGroupName": {
+                        "Ref": "WebSecurityGroup"
                     }
-                ]
-            }
-        },
-        "SampleDB": {
-            "Type": "AWS::RDS::DBInstance",
-            "Properties": {
-                "Engine": "MySQL",
-                "DBName": "beanstalkdb",
-                "MasterUsername": {
-                    "Ref": "DBUser"
-                },
-                "DBInstanceClass": "db.t2.micro",
-                "AllocatedStorage": "5",
-                "MasterUserPassword": {
-                    "Ref": "DBPassword"
-                },
-                "VPCSecurityGroups": {
-                    "Ref": "DBSecurityGroup"
-                },
-                "DBSubnetGroupName": {
-                    "Ref": "DBSubnetGroup"
                 }
-            }
-        },
-        "AlarmTopic": {
-            "Type": "AWS::SNS::Topic",
-            "Properties": {
-                "Subscription": [
-                    {
-                        "Endpoint": {
-                            "Ref": "OperatorEMail"
-                        },
-                        "Protocol": "email"
-                    }
-                ]
-            }
-        },
-        "CPUAlarmHigh": {
-            "Type": "AWS::CloudWatch::Alarm",
-            "Properties": {
-                "EvaluationPeriods": "10",
-                "Statistic": "Average",
-                "Threshold": "50",
-                "AlarmDescription": "Alarm if CPU too high or metric disappears indicating the RDS database instance is having issues",
-                "Period": "60",
-                "Namespace": "AWS/RDS",
-                "MetricName": "CPUUtilization",
-                "Dimensions": [
-                    {
-                        "Name": "DBInstanceIdentifier",
-                        "Value": {
-                            "Ref": "SampleDB"
-                        }
-                    }
-                ],
-                "ComparisonOperator": "GreaterThanThreshold",
-                "AlarmActions": [
-                    {
-                        "Ref": "AlarmTopic"
-                    }
-                ],
-                "InsufficientDataActions": [
-                    {
-                        "Ref": "AlarmTopic"
-                    }
-                ]
+            ]
+        }
+    },
+    "SampleDB": {
+        "Type": "AWS::RDS::DBInstance",
+        "Properties": {
+            "Engine": "MySQL",
+            "DBName": "beanstalkdb",
+            "MasterUsername": {
+                "Ref": "DBUser"
+            },
+            "DBInstanceClass": "db.t2.micro",
+            "AllocatedStorage": "5",
+            "MasterUserPassword": {
+                "Ref": "DBPassword"
+            },
+            "VPCSecurityGroups": {
+                "Ref": "DBSecurityGroup"
+            },
+            "DBSubnetGroupName": {
+                "Ref": "DBSubnetGroup"
             }
         }
     },
-    "Outputs": {
-        "URL": {
-            "Description": "The URL of the Elastic Beanstalk environment",
-            "Value": {
-                "Fn::Join": [
-                    "",
-                    [
-                        "http://",
-                        {
-                            "Fn::GetAtt": [
-                                "SampleEnvironment",
-                                "EndpointURL"
-                            ]
-                        }
-                    ]
-                ]
-            }
+    "AlarmTopic": {
+        "Type": "AWS::SNS::Topic",
+        "Properties": {
+            "Subscription": [
+                {
+                    "Endpoint": {
+                        "Ref": "OperatorEMail"
+                    },
+                    "Protocol": "email"
+                }
+            ]
+        }
+    },
+    "CPUAlarmHigh": {
+        "Type": "AWS::CloudWatch::Alarm",
+        "Properties": {
+            "EvaluationPeriods": "10",
+            "Statistic": "Average",
+            "Threshold": "50",
+            "AlarmDescription": "Alarm if CPU too high or metric disappears indicating the RDS database instance is having issues",
+            "Period": "60",
+            "Namespace": "AWS/RDS",
+            "MetricName": "CPUUtilization",
+            "Dimensions": [
+                {
+                    "Name": "DBInstanceIdentifier",
+                    "Value": {
+                        "Ref": "SampleDB"
+                    }
+                }
+            ],
+            "ComparisonOperator": "GreaterThanThreshold",
+            "AlarmActions": [
+                {
+                    "Ref": "AlarmTopic"
+                }
+            ],
+            "InsufficientDataActions": [
+                {
+                    "Ref": "AlarmTopic"
+                }
+            ]
         }
     }
+},
+"Outputs": {
+    "URL": {
+        "Description": "The URL of the Elastic Beanstalk environment",
+        "Value": {
+            "Fn::Join": [
+                "",
+                [
+                    "http://",
+                    {
+                        "Fn::GetAtt": [
+                            "SampleEnvironment",
+                            "EndpointURL"
+                        ]
+                    }
+                ]
+            ]
+        }
+    }
+}
 }
