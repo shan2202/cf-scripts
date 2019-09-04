@@ -564,7 +564,7 @@
                 "MasterUsername": {
                     "Ref": "DBUser"
                 },
-                "DBInstanceClass": "db.t2.small",
+                "DBInstanceClass": "db.t2.micro",
                 "AllocatedStorage": "5",
                 "MasterUserPassword": {
                     "Ref": "DBPassword"
