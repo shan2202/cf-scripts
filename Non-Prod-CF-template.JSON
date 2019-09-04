@@ -40,35 +40,7 @@
             }
         }
     },
-    "Conditions": {
-        "Is-EC2-VPC": {
-            "Fn::Or": [
-                {
-                    "Fn::Equals": [
-                        {
-                            "Ref": "AWS::Region"
-                        },
-                        "eu-central-1"
-                    ]
-                },
-                {
-                    "Fn::Equals": [
-                        {
-                            "Ref": "AWS::Region"
-                        },
-                        "cn-north-1"
-                    ]
-                }
-            ]
-        },
-        "Is-EC2-Classic": {
-            "Fn::Not": [
-                {
-                    "Condition": "Is-EC2-VPC"
-                }
-            ]
-        }
-    },
+    
     "Resources": {
         "VPC": {
             "Type": "AWS::EC2::VPC",
