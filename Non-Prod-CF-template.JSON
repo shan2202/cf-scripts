@@ -532,8 +532,7 @@
             "Type": "AWS::RDS::DBSubnetGroup",
             "Properties": {
                 "DBSubnetGroupDescription": "Subnets available for the RDS DB Instance",
-                "SubnetIds": {
-                    "Ref": "PrivateSubnet"
+                "SubnetIds": {  "Fn::FindInMap" : [ "SubnetConfig", "Private", "CIDR" ]}
                 }
             }
         },
