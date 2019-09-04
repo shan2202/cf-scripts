@@ -494,6 +494,27 @@
                         }
                     },
                     {
+                        "Namespace": "aws:ec2:vpc",
+                        "OptionName": "VPCId",
+                        "Value": {
+                            "Ref": "VPC"
+                        }
+                    },
+                    {
+                        "Namespace": "aws:ec2:vpc",
+                        "OptionName": "Subnets",
+                        "Value": {
+                            "Ref": "PrivateSubnet"
+                        }
+                    },
+                    {
+                        "Namespace": "aws:ec2:vpc",
+                        "OptionName": "ELBSubnets",
+                        "Value": {
+                            "Ref": "PublicSubnet"
+                        }
+                    },
+                    {
                         "Namespace": "aws:autoscaling:launchconfiguration",
                         "OptionName": "SecurityGroups",
                         "Value": {
@@ -530,7 +551,7 @@
                         "IpProtocol": "tcp",
                         "FromPort": "80",
                         "ToPort": "80",
-                        "CidrIp" : "0.0.0.0/0, ::/0"
+                        "CidrIp": "0.0.0.0/0, ::/0"
                     }
                 ]
             }
@@ -563,7 +584,6 @@
                 ]
             }
         },
-        
         "SampleDB": {
             "Type": "AWS::RDS::DBInstance",
             "Properties": {
@@ -577,10 +597,10 @@
                 "MasterUserPassword": {
                     "Ref": "DBPassword"
                 },
-                "DBSecurityGroups": {
+                "VPCSecurityGroups": {
                     "Ref": "DBSecurityGroup"
                 },
-                "DBSubnetGroups":{
+                "DBSubnetGroupName": {
                     "Ref": "DBSubnetGroup"
                 }
             }
