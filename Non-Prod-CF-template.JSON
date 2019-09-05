@@ -37,6 +37,9 @@
             },
             "Private": {
                 "CIDR": "10.0.1.0/24"
+            },
+            "Private1": {
+                "CIDR": "10.0.2.0/24"
             }
         }
     },
@@ -276,6 +279,35 @@
                         "CIDR"
                     ]
                 },
+                "AvailabilityZone" : "us-east-1a",
+                "Tags": [
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "AWS::StackId"
+                        }
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "CidrBlock": {
+                    "Fn::FindInMap": [
+                        "SubnetConfig",
+                        "Private1",
+                        "CIDR"
+                    ]
+                },
+                "AvailabilityZone" : "us-east-1b",
                 "Tags": [
                     {
                         "Key": "Application",
@@ -422,7 +454,7 @@
                     "Ref": "SampleApplication"
                 },
                 "Description": "Default Configuration Version 1.0",
-                "SolutionStackName": "64bit Amazon Linux 2018.03 v3.0.7 running Tomcat 7 Java 7",
+                "SolutionStackName": "64bit Amazon Linux 2018.03 v3.2.1 running Tomcat 7 Java 7",
                 "OptionSettings": [
                     {
                         "Namespace": "aws:elasticbeanstalk:application:environment",
@@ -530,33 +562,22 @@
         "DBSubnetGroup": {
             "Type": "AWS::RDS::DBSubnetGroup",
             "Properties": {
-                "DBSubnetGroupDescription": "Subnets available for the RDS DB Instance",
-                "SubnetIds": {
-                    "Fn::FindInMap": [
-                        "SubnetConfig",
-                        "Private",
-                        "CIDR"
-                    ]
-                }
+                "DBSubnetGroupDescription": "Subnets available for the RDS DB Instance"  ,
+                "SubnetIds": [
+                    {"Ref" : "PrivateSubnet"},{"Ref" : "PrivateSubnet1"}
+                ]
             }
         },
     "DBSecurityGroup": {
-        "Type": "AWS::EC2::SecurityGroup",
+        "Type": "AWS::RDS::DBSecurityGroup",
         "Properties": {
             "GroupDescription": "Open database for access",
-            "VpcId": {
+            "EC2VpcId": {
                 "Ref": "VPC"
             },
-            "SecurityGroupIngress": [
-                {
-                    "IpProtocol": "tcp",
-                    "FromPort": "3306",
-                    "ToPort": "3306",
-                    "SourceSecurityGroupName": {
-                        "Ref": "WebSecurityGroup"
-                    }
-                }
-            ]
+            "DBSecurityGroupIngress": {
+                "EC2SecurityGroupId": { "Ref": "WebSecurityGroup"}
+            }
         }
     },
     "SampleDB": {
@@ -572,12 +593,14 @@
             "MasterUserPassword": {
                 "Ref": "DBPassword"
             },
-            "VPCSecurityGroups": {
-                "Ref": "DBSecurityGroup"
-            },
+            "DBSecurityGroups": [ 
+                {"Ref": "DBSecurityGroup"}
+                
+            ],
             "DBSubnetGroupName": {
                 "Ref": "DBSubnetGroup"
             }
+            
         }
     },
     "AlarmTopic": {
