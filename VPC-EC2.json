@@ -483,17 +483,28 @@
             "Name" : "MyLB",
             "Scheme" : "internet-facing",
             "SecurityGroups" : [ { "Ref" : "ALBSecurityGroup" } ],
-            "SubnetMappings" : [ { "Ref" : "PublicSubnet" },{ "Ref" : "PublicSubnet2" } ],
+            "Subnets" : [ { "Ref" : "PublicSubnet" },{ "Ref" : "PublicSubnet2" } ],
             "Type" : "application"
           }
       },
+      "LBListener" : {
+          "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+          "Properties" : {
+              "DefaultActions" : [ {"Type" : "forward", "TargetGroupArn": {"Ref" : "ALBTargetgroup"}}],
+              "LoadBalancerArn" : { "Ref" : "AppLoadBalancer" },
+              "Port" : "80",
+              "Protocol" : "HTTP"
+            }
+        
+      },
+
       "ALBTargetgroup" : {
           "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
           "Properties" : {
               "Name" : "WebTarget",
               "Port" : "80",
               "Protocol" : "HTTP",
-              "Targets" : [ {"Ref" : "EC2Instance"}],
+              "Targets" : [ { "Id" : {"Ref" : "EC2Instance"}}],
               "TargetType" : "instance",
               "VpcId" : { "Ref": "VPC" }
           }
