@@ -1,0 +1,546 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "AWS CloudFormation vpc.template: VPC with Public, Private subnet, Internet and NAT Gateway",
+    "Mappings": {
+      "SubnetConfig": {
+        "VPC": {
+          "CIDR": "10.0.0.0/16"
+        },
+        "Public1": {
+          "CIDR": "10.0.1.0/24"
+        },
+        "Public2": {
+          "CIDR": "10.0.2.0/24"
+        },
+        "Private3": {
+          "CIDR": "10.0.3.0/24"
+        },
+        "Private4": {
+          "CIDR": "10.0.4.0/24"
+        }
+      }
+    },
+
+    "Parameters" : {
+
+      "InstanceType" : {
+        "Description" : "WebServer EC2 instance type",
+        "Type" : "String",
+        "Default" : "m1.small",
+        "AllowedValues" : [ "t1.micro","m1.small","m1.medium","m1.large","m1.xlarge","m2.xlarge","m2.2xlarge","m2.4xlarge","m3.xlarge","m3.2xlarge","c1.medium","c1.xlarge","cc1.4xlarge","cc2.8xlarge","cg1.4xlarge"],
+        "ConstraintDescription" : "must be a valid EC2 instance type."
+      },
+
+      "KeyName": {
+        "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+        "Default": "test",
+        "Type": "String",
+        "MinLength": "1",
+        "MaxLength": "255",
+        "AllowedPattern" : "[\\x20-\\x7E]*",
+        "ConstraintDescription" : "can contain only ASCII characters."
+      },
+      "DBName": {
+        "Default": "drupaldb",
+        "Description" : "The Drupal database name",
+        "Type": "String",
+        "MinLength": "1",
+        "MaxLength": "64",
+        "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+        "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+      },
+  
+      "DBUsername": {
+        "Default": "admin",
+        "NoEcho": "true",
+        "Description" : "The Drupal database admin account username",
+        "Type": "String",
+        "MinLength": "1",
+        "MaxLength": "16",
+        "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+        "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+      },
+  
+      "DBPassword": {
+        "Default": "password",
+        "NoEcho": "true",
+        "Description" : "The Drupal database admin account password",
+        "Type": "String",
+        "MinLength": "8",
+        "MaxLength": "41",
+        "AllowedPattern" : "[a-zA-Z0-9]*",
+        "ConstraintDescription" : "must contain only alphanumeric characters."
+      },
+  
+      "DBClass" : {
+        "Default" : "db.m1.small",
+        "Description" : "Database instance class",
+        "Type" : "String",
+        "AllowedValues" : [ "db.m1.small", "db.m1.large", "db.m1.xlarge", "db.m2.xlarge", "db.m2.2xlarge", "db.m2.4xlarge" ],
+        "ConstraintDescription" : "must select a valid database instance type."
+      },
+  
+      "DBAllocatedStorage" : {
+        "Default": "5",
+        "Description" : "The size of the database (Gb)",
+        "Type": "Number",
+        "MinValue": "5",
+        "MaxValue": "1024",
+        "ConstraintDescription" : "must be between 5 and 1024Gb."
+      }
+    },
+    "Resources": {
+      "VPC": {
+        "Type": "AWS::EC2::VPC",
+        "Properties": {
+          "CidrBlock": {
+            "Fn::FindInMap": [
+              "SubnetConfig",
+              "VPC",
+              "CIDR"
+            ]
+          },
+          "Tags": [
+            {
+              "Key": "Application",
+              "Value": {
+                "Ref": "AWS::StackId"
+              }
+            },
+            {
+              "Key": "Network",
+              "Value": "Public"
+            }
+          ]
+        }
+      },
+      "PublicSubnet": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "VpcId": {
+            "Ref": "VPC"
+          },
+          "CidrBlock": {
+            "Fn::FindInMap": [
+              "SubnetConfig",
+              "Public1",
+              "CIDR"
+            ]
+          },
+          "AvailabilityZone": "us-east-1a",
+          "Tags": [
+            {
+              "Key": "Application",
+              "Value": {
+                "Ref": "AWS::StackId"
+              }
+            },
+            {
+              "Key": "Network",
+              "Value": "Public"
+            }
+          ]
+        }
+      },
+      "PublicSubnet2": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "VpcId": {
+            "Ref": "VPC"
+          },
+          "CidrBlock": {
+            "Fn::FindInMap": [
+              "SubnetConfig",
+              "Public2",
+              "CIDR"
+            ]
+          },
+          "AvailabilityZone": "us-east-1b",
+          "Tags": [
+            {
+              "Key": "Application",
+              "Value": {
+                "Ref": "AWS::StackId"
+              }
+            },
+            {
+              "Key": "Network",
+              "Value": "Public"
+            }
+          ]
+        }
+      },
+      "InternetGateway": {
+        "Type": "AWS::EC2::InternetGateway",
+        "Properties": {
+          "Tags": [
+            {
+              "Key": "Application",
+              "Value": {
+                "Ref": "AWS::StackId"
+              }
+            },
+            {
+              "Key": "Network",
+              "Value": "Public"
+            }
+          ]
+        }
+      },
+      "GatewayToInternet": {
+        "Type": "AWS::EC2::VPCGatewayAttachment",
+        "Properties": {
+          "VpcId": {
+            "Ref": "VPC"
+          },
+          "InternetGatewayId": {
+            "Ref": "InternetGateway"
+          }
+        }
+      },
+      "PublicRouteTable": {
+        "Type": "AWS::EC2::RouteTable",
+        "Properties": {
+          "VpcId": {
+            "Ref": "VPC"
+          },
+          "Tags": [
+            {
+              "Key": "Application",
+              "Value": {
+                "Ref": "AWS::StackId"
+              }
+            },
+            {
+              "Key": "Network",
+              "Value": "Public"
+            }
+          ]
+        }
+      },
+      "PublicRoute": {
+        "Type": "AWS::EC2::Route",
+        "DependsOn": "GatewayToInternet",
+        "Properties": {
+          "RouteTableId": {
+            "Ref": "PublicRouteTable"
+          },
+          "DestinationCidrBlock": "0.0.0.0/0",
+          "GatewayId": {
+            "Ref": "InternetGateway"
+          }
+        }
+      },
+      "PublicSubnetRouteTableAssociation": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": {
+            "Ref": "PublicSubnet"
+          },
+          "RouteTableId": {
+            "Ref": "PublicRouteTable"
+          }
+        }
+      },
+      "PublicSubnetRouteTableAssociation2": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": {
+            "Ref": "PublicSubnet2"
+          },
+          "RouteTableId": {
+            "Ref": "PublicRouteTable"
+          }
+        }
+      },
+      "PrivateSubnet": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "VpcId": {
+            "Ref": "VPC"
+          },
+          "CidrBlock": {
+            "Fn::FindInMap": [
+              "SubnetConfig",
+              "Private3",
+              "CIDR"
+            ]
+          },
+          "AvailabilityZone": "us-east-1a",
+          "Tags": [
+            {
+              "Key": "Application",
+              "Value": {
+                "Ref": "AWS::StackId"
+              }
+            },
+            {
+              "Key": "Network",
+              "Value": "Private"
+            }
+          ]
+        }
+      },
+      "PrivateSubnet2": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "VpcId": {
+            "Ref": "VPC"
+          },
+          "CidrBlock": {
+            "Fn::FindInMap": [
+              "SubnetConfig",
+              "Private4",
+              "CIDR"
+            ]
+          },
+          "AvailabilityZone": "us-east-1b",
+          "Tags": [
+            {
+              "Key": "Application",
+              "Value": {
+                "Ref": "AWS::StackId"
+              }
+            },
+            {
+              "Key": "Network",
+              "Value": "Private"
+            }
+          ]
+        }
+      },
+      "PrivateRouteTable": {
+        "Type": "AWS::EC2::RouteTable",
+        "Properties": {
+          "VpcId": {
+            "Ref": "VPC"
+          },
+          "Tags": [
+            {
+              "Key": "Application",
+              "Value": {
+                "Ref": "AWS::StackId"
+              }
+            },
+            {
+              "Key": "Network",
+              "Value": "Private"
+            }
+          ]
+        }
+      },
+      "PrivateSubnetRouteTableAssociation": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": {
+            "Ref": "PrivateSubnet"
+          },
+          "RouteTableId": {
+            "Ref": "PrivateRouteTable"
+          }
+        }
+      },
+      "PrivateSubnetRouteTableAssociation2": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": {
+            "Ref": "PrivateSubnet2"
+          },
+          "RouteTableId": {
+            "Ref": "PrivateRouteTable"
+          }
+        }
+      },
+      "NAT": {
+        "Type": "AWS::EC2::NatGateway",
+        "Properties": {
+          "AllocationId": {
+            "Fn::GetAtt": [
+              "EIP",
+              "AllocationId"
+            ]
+          },
+          "SubnetId": {
+            "Ref": "PublicSubnet2"
+          },
+          "Tags": [
+            {
+              "Key": "Application",
+              "Value": {
+                "Ref": "AWS::StackId"
+              }
+            },
+            {
+              "Key": "Network",
+              "Value": "Private"
+            }
+          ]
+        }
+      },
+      "EIP": {
+        "Type": "AWS::EC2::EIP",
+        "Properties": {
+          "Domain": "vpc"
+        }
+      },
+      "PrivateRoute": {
+        "Type": "AWS::EC2::Route",
+        "DependsOn": "NAT",
+        "Properties": {
+          "RouteTableId": {
+            "Ref": "PrivateRouteTable"
+          },
+          "DestinationCidrBlock": "0.0.0.0/0",
+          "NatGatewayId": {
+            "Ref": "NAT"
+          }
+        }
+      },
+      "BastionSecurityGroup": {
+        "Type": "AWS::EC2::SecurityGroup",
+        "Properties": {
+          "GroupDescription": "Allow SSH via Bastion",
+          "VpcId": {
+            "Ref": "VPC"
+          },
+          "SecurityGroupIngress": [
+            {
+              "IpProtocol": "TCP",
+              "FromPort": 22,
+              "ToPort": 22,
+              "CidrIp": "0.0.0.0/0"
+            }
+          ]
+        }
+      },
+      "ALBSecurityGroup": {
+        "Type": "AWS::EC2::SecurityGroup",
+        "Properties": {
+          "GroupDescription": "Allow http on ALB",
+          "VpcId": {
+            "Ref": "VPC"
+          },
+          "SecurityGroupIngress": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 80,
+              "ToPort": 80,
+              "CidrIp": "0.0.0.0/0"
+            }
+          ]
+        }
+      },
+      "InstanceSecurityGroup": {
+        "Type": "AWS::EC2::SecurityGroup",
+        "Properties": {
+          "GroupDescription": "Allow http to client host",
+          "VpcId": {
+            "Ref": "VPC"
+          },
+          "SecurityGroupIngress": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 80,
+              "ToPort": 80,
+              "SourceSecurityGroupId": {
+                "Ref": "ALBSecurityGroup"
+              }
+            },
+            {
+              "IpProtocol": "TCP",
+              "FromPort": 22,
+              "ToPort": 22,
+              "SourceSecurityGroupId": {
+                "Ref": "BastionSecurityGroup"
+              }
+            }
+          ]
+        }
+      },
+
+      "EC2Instance" : {
+        "Type" : "AWS::EC2::Instance",
+        "Properties" : {
+          "InstanceType" : "t2.micro",
+          "KeyName" : { "Ref" : "KeyName" },
+          "ImageId" : "ami-0b69ea66ff7391e80",
+          "NetworkInterfaces": [ {
+            "DeviceIndex": "0",
+            "SubnetId": { "Ref" : "PrivateSubnet" },
+            "GroupSet" : [ { "Ref" : "InstanceSecurityGroup" } ]
+            } ],
+          "UserData": { "Fn::Base64" : { "Fn::Join" : ["", [
+            "#!/bin/bash -ex\n",
+            "yum update -y \n",
+            "yum install -y httpd \n",
+            "service httpd start \n",
+            "chkconfig httpd on"
+          ]]}}
+        }
+      },
+      "AppLoadBalancer" : {
+        "Type" : "AWS::ElasticLoadBalancingV2::LoadBalancer",
+        "Properties" : {
+            "IpAddressType" : "ipv4",
+            "Name" : "MyLB",
+            "Scheme" : "internet-facing",
+            "SecurityGroups" : [ { "Ref" : "ALBSecurityGroup" } ],
+            "Subnets" : [ { "Ref" : "PublicSubnet" },{ "Ref" : "PublicSubnet2" } ],
+            "Type" : "application"
+          }
+      },
+      "LBListener" : {
+          "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+          "Properties" : {
+              "DefaultActions" : [ {"Type" : "forward", "TargetGroupArn": {"Ref" : "ALBTargetgroup"}}],
+              "LoadBalancerArn" : { "Ref" : "AppLoadBalancer" },
+              "Port" : "80",
+              "Protocol" : "HTTP"
+            }
+        
+      },
+
+      "ALBTargetgroup" : {
+          "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+          "Properties" : {
+              "Name" : "WebTarget",
+              "Port" : "80",
+              "Protocol" : "HTTP",
+              "Targets" : [ { "Id" : {"Ref" : "EC2Instance"}}],
+              "TargetType" : "instance",
+              "VpcId" : { "Ref": "VPC" }
+          }
+      },
+
+      "DBInstance" : {
+        "Type": "AWS::RDS::DBInstance",
+        "Properties": {
+          "DBName"            : { "Ref" : "DBName" },
+          "Engine"            : "MySQL",
+          "MasterUsername"    : { "Ref" : "DBUsername" },
+          "DBInstanceClass"   : { "Ref" : "DBClass" },
+          "DBSecurityGroups"  : [{ "Ref" : "DBSecurityGroup" }],
+          "AllocatedStorage"  : { "Ref" : "DBAllocatedStorage" },
+          "MasterUserPassword": { "Ref" : "DBPassword" }
+        }
+      },
+    
+      "DBSecurityGroup": {
+        "Type": "AWS::RDS::DBSecurityGroup",
+        "Properties": {
+          "DBSecurityGroupIngress": { "EC2SecurityGroupName": { "Ref": "InstanceSecurityGroup"} },
+          "GroupDescription"      : "Frontend Access"
+        }
+      }
+    },
+
+    "Outputs" : {
+      "WebUrl" : {
+        "Description" : "This is the endpoint of application.",
+        "Value" : { 
+          "Fn::Join" : [ "", [ "http://", { "Fn::GetAtt" : [ "AppLoadBalancer", "DNSName"] } ] ] }
+    }
+  }
+}
+
+
