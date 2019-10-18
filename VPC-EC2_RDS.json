@@ -524,7 +524,8 @@
           "MasterUserPassword": { "Ref" : "DBPassword" },
           "DBSubnetGroupName" : {"Ref" : "DBSubnetGroup"},
           "VPCSecurityGroups" : [ { "Ref" : "DBSecurityGroup" }  ]
-        },
+        }
+    },
         
       "DBSecurityGroup": {
           "Type": "AWS::EC2::SecurityGroup",
@@ -551,7 +552,7 @@
             "DBSubnetGroupDescription" : "Private Subnet group for DB ",
             "DBSubnetGroupName" : "DBSubnetGroup",
             "SubnetIds" : [ {"Ref": "PrivateSubnet2"}]
-    }
+            }
         }
     },
     "Outputs" : {
