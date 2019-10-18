@@ -41,8 +41,8 @@
         "ConstraintDescription" : "can contain only ASCII characters."
       },
       "DBName": {
-        "Default": "drupaldb",
-        "Description" : "The Drupal database name",
+        "Default": "MyDB",
+        "Description" : "The database name",
         "Type": "String",
         "MinLength": "1",
         "MaxLength": "64",
@@ -53,7 +53,7 @@
       "DBUsername": {
         "Default": "admin",
         "NoEcho": "true",
-        "Description" : "The Drupal database admin account username",
+        "Description" : "The database admin account username",
         "Type": "String",
         "MinLength": "1",
         "MaxLength": "16",
@@ -64,7 +64,7 @@
       "DBPassword": {
         "Default": "password",
         "NoEcho": "true",
-        "Description" : "The Drupal database admin account password",
+        "Description" : "The database admin account password",
         "Type": "String",
         "MinLength": "8",
         "MaxLength": "41",
@@ -73,10 +73,10 @@
       },
   
       "DBClass" : {
-        "Default" : "db.m1.small",
+        "Default" : "db.t2.micro",
         "Description" : "Database instance class",
         "Type" : "String",
-        "AllowedValues" : [ "db.m1.small", "db.m1.large", "db.m1.xlarge", "db.m2.xlarge", "db.m2.2xlarge", "db.m2.4xlarge" ],
+        "AllowedValues" : [ "db.m1.small", "db.m1.large", "db.m1.xlarge", "db.m2.xlarge", "db.m2.2xlarge", "db.m2.4xlarge", "db.t2.micro" ],
         "ConstraintDescription" : "must select a valid database instance type."
       },
   
@@ -517,11 +517,13 @@
         "Properties": {
           "DBName"            : { "Ref" : "DBName" },
           "Engine"            : "MySQL",
+          "EngineVersion"     : "5.7.22",
           "MasterUsername"    : { "Ref" : "DBUsername" },
           "DBInstanceClass"   : { "Ref" : "DBClass" },
           "DBSecurityGroups"  : [{ "Ref" : "DBSecurityGroup" }],
           "AllocatedStorage"  : { "Ref" : "DBAllocatedStorage" },
-          "MasterUserPassword": { "Ref" : "DBPassword" }
+          "MasterUserPassword": { "Ref" : "DBPassword" },
+          "VPCSecurityGroups" : [ { "Ref" : "myVPCSecurityGroup" }  ]
         }
       },
     
@@ -529,8 +531,16 @@
         "Type": "AWS::RDS::DBSecurityGroup",
         "Properties": {
           "DBSecurityGroupIngress": { "EC2SecurityGroupName": { "Ref": "InstanceSecurityGroup"} },
+          "EC2VpcId" : {"Ref" : "VPC"},
           "GroupDescription"      : "Frontend Access"
         }
+      },
+      "DBSecurityGroupIngress" : {
+        "Type" : "AWS::RDS::DBSecurityGroupIngress",
+        "Properties" : {
+            "DBSecurityGroupName" : {"Ref" : "DBSecurityGroup"},
+            "EC2SecurityGroupId" : {"Ref" : "InstanceSecurityGroup"}
+          }
       }
     },
 
