@@ -520,30 +520,40 @@
           "EngineVersion"     : "5.7.22",
           "MasterUsername"    : { "Ref" : "DBUsername" },
           "DBInstanceClass"   : { "Ref" : "DBClass" },
-          "DBSecurityGroups"  : [{ "Ref" : "DBSecurityGroup" }],
           "AllocatedStorage"  : { "Ref" : "DBAllocatedStorage" },
           "MasterUserPassword": { "Ref" : "DBPassword" },
-          "VPCSecurityGroups" : [ { "Ref" : "myVPCSecurityGroup" }  ]
-        }
-      },
-    
+          "DBSubnetGroupName" : {"Ref" : "DBSubnetGroup"},
+          "VPCSecurityGroups" : [ { "Ref" : "DBSecurityGroup" }  ]
+        },
+        
       "DBSecurityGroup": {
-        "Type": "AWS::RDS::DBSecurityGroup",
-        "Properties": {
-          "DBSecurityGroupIngress": { "EC2SecurityGroupName": { "Ref": "InstanceSecurityGroup"} },
-          "EC2VpcId" : {"Ref" : "VPC"},
-          "GroupDescription"      : "Frontend Access"
+          "Type": "AWS::EC2::SecurityGroup",
+          "Properties": {
+             "GroupDescription": "Allow http to client host",
+             "VpcId": {
+                "Ref": "VPC"
+             },
+             "SecurityGroupIngress": [
+                {
+                  "IpProtocol": "tcp",
+                  "FromPort": 3306,
+                  "ToPort": 3306,
+                  "SourceSecurityGroupId": {
+                    "Ref": "InstanceSeurityGroup"
+                  }
+                }
+              ]
+            }
+        },
+        "DBSubnetGroup" : {
+            "Type" : "AWS::RDS::DBSubnetGroup",
+            "Properties" : {
+            "DBSubnetGroupDescription" : "Private Subnet group for DB ",
+            "DBSubnetGroupName" : "DBSubnetGroup",
+            "SubnetIds" : [ {"Ref": "PrivateSubnet2"}]
+    }
         }
-      },
-      "DBSecurityGroupIngress" : {
-        "Type" : "AWS::RDS::DBSecurityGroupIngress",
-        "Properties" : {
-            "DBSecurityGroupName" : {"Ref" : "DBSecurityGroup"},
-            "EC2SecurityGroupId" : {"Ref" : "InstanceSecurityGroup"}
-          }
-      }
     },
-
     "Outputs" : {
       "WebUrl" : {
         "Description" : "This is the endpoint of application.",
