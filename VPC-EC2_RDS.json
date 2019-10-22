@@ -457,6 +457,19 @@
           ]
         }
       },
+      "BastionInstance" : {
+        "Type" : "AWS::EC2::Instance",
+        "Properties" : {
+          "InstanceType" : "t2.micro",
+          "KeyName" : { "Ref" : "KeyName" },
+          "ImageId" : "ami-0b69ea66ff7391e80",
+          "NetworkInterfaces": [ {
+            "DeviceIndex": "0",
+            "SubnetId": { "Ref" : "PublicSubnet" },
+            "GroupSet" : [ { "Ref" : "BastionSecurityGroup" } ]
+            } ]
+        }
+      },
 
       "EC2Instance" : {
         "Type" : "AWS::EC2::Instance",
