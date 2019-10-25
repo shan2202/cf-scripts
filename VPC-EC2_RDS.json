@@ -76,7 +76,7 @@
         "Default" : "db.t2.micro",
         "Description" : "Database instance class",
         "Type" : "String",
-        "AllowedValues" : [ "db.m1.small", "db.m1.large", "db.m1.xlarge", "db.m2.xlarge", "db.m2.2xlarge", "db.m2.4xlarge", "db.t2.micro" ],
+        "AllowedValues" : [ "db.m1.small","db.m4.small", "db.m1.large", "db.m1.xlarge", "db.m2.xlarge", "db.m2.2xlarge", "db.m2.4xlarge", "db.t2.micro" ],
         "ConstraintDescription" : "must select a valid database instance type."
       },
   
@@ -440,8 +440,8 @@
           "SecurityGroupIngress": [
             {
               "IpProtocol": "tcp",
-              "FromPort": 80,
-              "ToPort": 80,
+              "FromPort": 8080,
+              "ToPort": 8080,
               "SourceSecurityGroupId": {
                 "Ref": "ALBSecurityGroup"
               }
@@ -464,6 +464,7 @@
           "KeyName" : { "Ref" : "KeyName" },
           "ImageId" : "ami-0b69ea66ff7391e80",
           "NetworkInterfaces": [ {
+            "AssociatePublicIpAddress" : "True",
             "DeviceIndex": "0",
             "SubnetId": { "Ref" : "PublicSubnet" },
             "GroupSet" : [ { "Ref" : "BastionSecurityGroup" } ]
@@ -481,14 +482,7 @@
             "DeviceIndex": "0",
             "SubnetId": { "Ref" : "PrivateSubnet" },
             "GroupSet" : [ { "Ref" : "InstanceSecurityGroup" } ]
-            } ],
-          "UserData": { "Fn::Base64" : { "Fn::Join" : ["", [
-            "#!/bin/bash -ex\n",
-            "yum update -y \n",
-            "yum install -y httpd \n",
-            "service httpd start \n",
-            "chkconfig httpd on"
-          ]]}}
+            } ]
         }
       },
       "AppLoadBalancer" : {
@@ -517,7 +511,7 @@
           "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
           "Properties" : {
               "Name" : "WebTarget",
-              "Port" : "80",
+              "Port" : "8080",
               "Protocol" : "HTTP",
               "Targets" : [ { "Id" : {"Ref" : "EC2Instance"}}],
               "TargetType" : "instance",
@@ -582,8 +576,14 @@
                   { "Fn::GetAtt": [ "DBInstance", "Endpoint.Port" ] },
                   "/",
                   { "Ref": "DBName" }]]}
+    },
+    "EC2BastionHost" : {
+        "Description" : "Public IP of Bastion server to connect to private EC2 instance",
+        "Value" : {"Fn::GetAtt" : ["BastionInstance","PublicIp"]}
+    },
+    "EC2InstanceHost" : {
+      "Description" : "Private IP of EC2 instance",
+      "Value" : {"Fn::GetAtt" : ["EC2Instance","PrivateIp"]}
     }
   }
 }
-
-
